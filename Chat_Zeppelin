@@ -40,8 +40,17 @@ insert into edem.mensajesenviados (name, name_id, message, message_id, time) val
 select * from edem.mensajesenviados;
 
 
+####Siguiente ejercicio####
 
+drop table edem.sensor_data;
 
-
+CREATE TABLE edem.sensor_data (
+    machine_id int,
+    sensor_id int,
+    event_time timeuuid,
+    observation_type text,
+    observation_value float,
+    PRIMARY KEY ((machine_id, sensor_id), event_time)
+    );
 
 
