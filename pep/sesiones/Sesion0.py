@@ -34,7 +34,7 @@ del(edad)
 os.getcwd  #mirar donde se ha guardado
 
 #Cambiar el directorio de trabajo
-os.chdir(r'C:\Users\Jose\OneDrive\Escritorio\EDEM\GitKraken\Edem2021\pep')  #Elegir el directorio donde se guarda
+os.chdir(r'C:\Users\pablo\Desktop\EDEM\estadisticapython\code_and_data')  #Elegir el directorio donde se guarda
 os.getcwd()
 
 # Guardamos en excel 
