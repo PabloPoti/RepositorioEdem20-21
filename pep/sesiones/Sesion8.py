@@ -13,7 +13,7 @@ import scipy.stats as stats
 
 
 # Change working directory
-os.chdir(r'C:\Users\Jose\OneDrive\Escritorio\EDEM\GitKraken\Edem2021\pep\code_and_data')
+os.chdir(r'C:\Users\pablo\Desktop\EDEM\estadisticapython\code_and_data')
 os.getcwd()
 
 #Reads data from CSV file and stores it in a dataframe called rentals_2011
