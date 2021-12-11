@@ -10,7 +10,7 @@ import numpy as np                        #Numeric python vectores matrices
 import matplotlib.pyplot as plt           # graficos
 
 #Poner donde está ubicado
-os.chdir(r'C:\Users\Jose\OneDrive\Escritorio\EDEM\GitKraken\Edem2021\pep\code_and_data')  #Define la carpeta de trabajo. Se tiene que hacer lo primero 
+os.chdir(r'C:\Users\pablo\Desktop\EDEM\estadisticapython\code_and_data')  #Define la carpeta de trabajo. Se tiene que hacer lo primero 
 os.getcwd()
 
 #Insertar el archivo
