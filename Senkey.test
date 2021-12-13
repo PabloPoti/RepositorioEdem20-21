@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec 13 17:32:09 2021
+
+@author: pablo
+"""
+reset -f
+
+#load basiclibraries
+import os
+import numpy as np
+import pandas as pd
+from pandas.api.types import CategoricalDtype #For definition of custom categorical data types (ordinal if necesary)
+import matplotlib.pyplot as plt
+import seaborn as sns  # For hi level, Pandas oriented, graphics
+import scipy.stats as stats  # For statistical inference 
+import scipy.stats as stats
+
+# Change working directory
+os.chdir(r'C:\Users\pablo\Desktop\EDEM\estadisticapython\code_and_data')
+os.getcwd()
+
+#Reads data from CSV file and stores it in a dataframe called rentals_2011
+# Pay atention to the specific format of your CSV data (; , or , .)
+wbr = pd.read_csv ("student-mat.csv", sep=',', decimal='.')
+wbr.shape
+wbr.head()
+#QC OK
+
+print(wbr.groupby('age').size())
+
+health_mm= wbr.loc[wbr.age==15,"Walc"]
+health_m= wbr.loc[wbr.age==16,"Walc"]
+health_n= wbr.loc[wbr.age==17,"Walc"]
+health_b= wbr.loc[wbr.age==18,"Walc"]
+health_mb= wbr.loc[wbr.age==19,"Walc"]
+health_20= wbr.loc[wbr.age==20,"Walc"]
+health_21= wbr.loc[wbr.age==21,"Walc"]
+health_22= wbr.loc[wbr.age==22,"Walc"]
+
+
+res=stats.f_oneway(health_mm,health_m,health_n,health_b,health_mb,health_22,health_21,health_20)
+
+# el pvalue es 0.006 por lo que es significativo el consumo de alcohol en findes en funcion de la edad
+print(res)
+
+plt.figure(figsize=(5,5))
+ax = sns.pointplot(x="age", y="Walc",
+data=wbr,ci=95, join=0)
+plt.yticks(np.arange(0,7, step=1))
+plt.ylim(0,6)
+plt.axhline(y=wbr.Walc.mean(),
+linewidth=1,
+linestyle= 'dashed',
+color="blue")
+plt.title('Figure x. Average Dalc by health.''\n')
+senkey_diagram.show()
