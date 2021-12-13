@@ -15,7 +15,7 @@ import seaborn as sns  # For hi level, Pandas oriented, graphics
 import scipy.stats as stats  # For statistical inference 
 
 
-os.chdir('/Users/alvaro/Desktop/archive')
+os.chdir(r'C:\Users\pablo\Desktop\EDEM\estadisticapython\code_and_data')
 os.getcwd()
 
 wbr = pd.read_csv ("student-mat.csv", sep=',', decimal=',')
