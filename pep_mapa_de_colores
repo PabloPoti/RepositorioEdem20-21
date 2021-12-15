@@ -1,0 +1,8 @@
+my_ct2.plot(kind="bar", edgecolor = "black", colormap='Blues')
+props = dict(boxstyle='round', facecolor='white', lw=0.5)
+plt.text(-0.4, 81, 'Chi2: 6876''\n''n: 731' '\n' 'Pval.: 0.000', bbox=props)
+plt.xlabel('Weather Situation')
+plt.title('Figure 7. Percentage of Rental level, by Weather Situation.''\n')
+plt.legend(['Sunny','Cloudy','Rainy'])
+plt.ylim(0,100)
+plt.xticks(rotation='horizontal')
