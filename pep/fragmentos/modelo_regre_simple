@@ -1,0 +1,14 @@
+###MODELO DE REGRESIÓN SIMPLE 1 --> SOBRE LA TEMPERATURA###
+
+#Primero un histograma SIEMPRE, este es lo más sencillo posible
+wbr.cnt.hist()
+wbr.temp_celsius.hist()
+#Una bivariante
+plt.scatter (wbr.temp_celsius,wbr.cnt)
+
+#Nueva librería
+from statsmodels.formula.api import ols
+
+#OLS - Ordinary List Square
+model1 = ols('cnt ~ temp_celsius', data=wbr).fit()
+#       'vble target ~ vble predictora'
