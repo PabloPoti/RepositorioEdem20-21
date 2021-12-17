@@ -1,0 +1,9 @@
+#load basiclibraries
+import os
+import numpy as np
+import pandas as pd
+from pandas.api.types import CategoricalDtype #For definition of custom categorical data types (ordinal if necesary)
+import matplotlib.pyplot as plt
+import seaborn as sns  # For hi level, Pandas oriented, graphics
+import scipy.stats as stats  # For statistical inference 
+import scipy.stats as stats
