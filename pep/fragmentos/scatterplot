@@ -1,0 +1,13 @@
+#SCATTERPLOT ---> Nos falta otra variable cuantitatiba (hay que generarla)
+##
+
+x=db.G3
+y=db.consumoDia
+tit='Figure .Alcohol consumption by age.''\n'
+plt.figure(figsize=(5,5))
+
+plt.scatter(x,y, s=20, facecolors='none', edgecolors='C0')
+plt.ylabel('Consumption')
+
+plt.xlabel('Finals Grades')
+plt.show()
