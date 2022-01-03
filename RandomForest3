@@ -1,0 +1,68 @@
+#Filter Lower Frequency Entries
+
+print("Pre filter shape of submission is ", final_merged.shape)
+final_merged = final_merged[final_merged["prob"] > 0] #remove items based on probability of occurence
+final_merged = final_merged.reset_index(drop = True)
+print("Post filter shape of submission is ", final_merged.shape)
+
+
+#Token Conversion to prediction string
+
+ret = []
+if TRAIN_CHAR_LEVEL:
+    print("We seem to have trained on Character positions (not on Word token positions. So converting the predictions back)")
+    # We need to convert the character positions into word (token positions)
+    for i in tqdm(final_merged["id"].unique()):
+        txt = read_train_file( i,
+                             test_dir)
+        
+        for j in final_merged[ final_merged["id"] == i].itertuples():
+            # For all entries in the current file
+            disc_start = getattr(j , "start_token")
+            disc_end = getattr(j, "end_token")
+            
+            ret.append(" ".join( [str(x) for x in calc_word_indices(txt, disc_start, disc_end)]))
+else:
+    for i in final_merged.itertuples():
+        ret.append(" ".join([str(x) for x in range( getattr(i, "start_token"), getattr(i, "end_token") )]) )
+
+ret = pd.DataFrame(ret, columns = ["predictionstring"])
+
+
+final_merged = pd.concat([ final_merged, ret], axis = 1)
+final_merged[PREDICTOR_DISCOURSE] = final_merged[PREDICTOR_DISCOURSE].map( {i:x for x,i in labels_to_map.items()} )
+final_merged.head(2)
+
+final_merged = final_merged[["id", PREDICTOR_DISCOURSE, "predictionstring"]]
+if V2:
+    #final_merged[PREDICTOR_DISCOURSE] = final_merged[PREDICTOR_DISCOURSE].apply(lambda x: x[:-2].strip())
+    final_merged[PREDICTOR_DISCOURSE] = final_merged[PREDICTOR_DISCOURSE].map( disc_type_to_disc )
+final_merged.columns = [ "id", "class", "predictionstring"]
+final_merged.to_csv("submission.csv", index = False)
+final_merged.head(10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
