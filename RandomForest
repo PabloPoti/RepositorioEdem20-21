@@ -1,0 +1,206 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.model_selection import train_test_split
+import numpy as np
+import os
+import re
+from sklearn.linear_model import SGDClassifier
+from sklearn import metrics
+from tqdm.auto import tqdm
+ISLOCAL = False
+V2 = True #Version 2 where we try to work on discourse_type number field
+
+IS_CORRECTED_TRAIN = True
+TRAIN_CHAR_LEVEL = True
+
+if V2:
+    PREDICTOR_DISCOURSE = "discourse_type_num"
+else:
+    PREDICTOR_DISCOURSE = "discourse_type"
+if ISLOCAL:
+    if IS_CORRECTED_TRAIN:
+        train_csv = "./corrected_train.csv"
+    else:
+        train_csv = "./train.csv"
+    train_dir = "./train"
+    test_dir = "./test"
+    ss_dir = "./sample_submission.csv"
+else:
+    if IS_CORRECTED_TRAIN:
+        train_csv = "../input/feedback-prize-corrected-train-csv/corrected_train.csv"
+    else:
+        train_csv = "../input/feedback-prize-2021/train.csv"
+        
+    train_dir = "../input/feedback-prize-2021/train"
+    test_dir = "../input/feedback-prize-2021/test"
+    ss_dir = "../input/feedback-prize-2021/sample_submission.csv"
+    
+if IS_CORRECTED_TRAIN:
+    print("CAUTION: USING CORRECTED TRAN FILE FROM @nboard")
+    
+train = pd.read_csv(train_csv)
+
+def read_train_file(currid = "423A1CA112E2", curr_dir = train_dir):
+    with open(os.path.join(curr_dir, "{}.txt".format(currid)), "r") as f:
+        filetext = f.read()
+        
+    return filetext
+    
+train.head(1)
+
+if IS_CORRECTED_TRAIN:
+    print("Using the corrected train file for modifications.")
+    train["word_start"] = train["new_predictionstring"].apply(lambda x: x.split()[0])
+    train["word_end"] = train["new_predictionstring"].apply(lambda x: x.split()[-1])
+    train["discourse_start"] = train["new_start"]
+    train["discourse_end"] = train["new_end"]
+else:
+    train["word_start"] = train["predictionstring"].apply(lambda x: x.split()[0])
+    train["word_end"] = train["predictionstring"].apply(lambda x: x.split()[-1])
+    train["discourse_start"] = pd.to_numeric(train["discourse_start"])
+    train["discourse_end"] = pd.to_numeric(train["discourse_end"])
+
+
+def add_ner_start_ends(df):
+    '''
+    Process the predictionstring and return the very first and the very last index of the words for the current row.
+    This may be helpful in tokenizing for the NER tasks using numpy later.
+    df should be in the same format as train.csv
+    
+    Version 9: Optimized the speed of operation by vectorizing the word_start operation
+    '''
+    ret = []
+
+    for i in tqdm(df["id"].unique()):
+        txt = read_train_file( i,
+                             train_dir)
+        len_file = len(txt.split())
+        splits = re.split("[\r\n,.!?]", txt)
+        len_splits = len(splits)
+        chars = len(txt)
+        len_first_sent = len(splits[0])
+        len_last_sent = len(splits[-1])
+
+        sentence_beginnings = [i+1 for i,x in enumerate(txt) if re.search("[.,?!\r\n]", txt) is not None]
+        sentence_01 = 0
+        sentence_02 = 0
+        sentence_03 = 0
+        sentence_n1 = 0
+        sentence_n2 = 0
+        sentence_n3 = 0
+        
+        if sentence_beginnings is not None:
+            if len(sentence_beginnings) > 0:
+                sentence_01 = sentence_beginnings[0] / len_file
+            if len(sentence_beginnings) > 1:
+                sentence_02 = sentence_beginnings[1] / len_file
+            if len(sentence_beginnings) > 2:
+                sentence_03 = sentence_beginnings[2] / len_file
+
+                sentence_n3 = sentence_beginnings[-3] / len_file
+                sentence_n2 = sentence_beginnings[-2] / len_file
+                sentence_n1 = sentence_beginnings[-1] / len_file
+                
+        
+        row = {"file_length" : int(len_file),
+               "len_splits" : len_splits,
+               "num_chars" : chars,
+               "len_first_sent" : len_first_sent,
+               "len_last_sent" : len_last_sent,
+               "sent_01" : sentence_01,
+               "sent_02" : sentence_02,
+               "sent_03" : sentence_03,
+               "sent_n1" : sentence_n1,
+               "sent_n2" : sentence_n2,
+               "sent_n3" : sentence_n3,
+               "id" : i
+               }
+        
+        ret.append(row.copy())
+
+    ret = pd.DataFrame(ret)
+    #ret.columns = ['word_start', 'word_end', 'file_length']
+    #df = pd.concat([df, ret], axis = 1)
+    df = df.merge(ret, 
+                 left_on = ["id"],
+                 right_on = ["id"])
+    return df
+
+def calc_word_indices(full_text, discourse_start, discourse_end):
+    start_index = len(full_text[:discourse_start].split())
+    token_len = len(full_text[discourse_start:discourse_end].split())
+    output = list(range(start_index, start_index + token_len))
+    if output[-1] >= len(full_text.split()):
+        output = list(range(start_index, start_index + token_len-1))
+    
+    return output
+
+#Train a regressor
+
+def get_regressor(df):
+    train = df.copy()
+    train = add_ner_start_ends(train)
+    if TRAIN_CHAR_LEVEL:
+        print("As per the settings, we are training the model on the Discourse Start and End positions. (Not Prediction string tokens)")
+        train["start_location_percent"] = train["discourse_start"] / train["file_length"] * 100
+        train["end_location_percent"] = train["discourse_end"] / train["file_length"] * 100
+    else:
+        train["start_location_percent"] = train["word_start"] / train["file_length"] * 100
+        train["end_location_percent"] = train["word_end"] / train["file_length"] * 100
+        
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.ensemble import GradientBoostingRegressor
+
+    cols_to_keep = ["start_location_percent", "end_location_percent", "file_length", PREDICTOR_DISCOURSE,
+                    "len_splits", "num_chars", "len_first_sent", "len_last_sent",
+                   "sent_01", "sent_02", "sent_03", "sent_n1", "sent_n2", "sent_n3"]
+    temp_data = train[cols_to_keep].copy()
+
+
+    temp_data[PREDICTOR_DISCOURSE] = temp_data[PREDICTOR_DISCOURSE].map(labels_to_map)
+  
+
+    preds = ["start_location_percent", "end_location_percent"]
+    labels = temp_data[preds]
+
+    temp_data = temp_data.drop(preds, axis = 1)
+
+    N_EST = 100
+    print("Fitting the randomforest model now. Please wait.")
+
+    rf = RandomForestRegressor(n_estimators = N_EST, n_jobs = -1)
+
+    
+
+    regressor = rf.fit(temp_data, 
+          labels)
+    print("Model fit done.")
+    
+    return regressor
+
+#Actual processing below
+
+labels_to_map = {i:x for x,i in enumerate(train[PREDICTOR_DISCOURSE].unique()) }
+disc_type_to_disc = train[["discourse_type_num", "discourse_type"]].drop_duplicates(\
+                                                                                    subset = ["discourse_type_num"]\
+                                                                                   ).set_index(["discourse_type_num"]\
+                                                                                              ).to_dict()["discourse_type"]
+reg = get_regressor(train)
+
+ss = pd.read_csv(ss_dir)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
