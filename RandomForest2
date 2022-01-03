@@ -1,0 +1,111 @@
+#RandomForest Model Properties
+
+ret = []
+for i in tqdm(ss['id'].unique()):
+    txt = read_train_file(i, test_dir)
+    
+    len_file = len(txt.split())
+    splits = re.split("[\r\n,.!?]", txt)
+    len_splits = len(splits)
+    chars = len(txt)
+    len_first_sent = len(splits[0])
+    len_last_sent = len(splits[-1])
+
+    sentence_beginnings = [i+1 for i,x in enumerate(txt) if re.search("[.,?!\r\n]", txt) is not None]
+
+    sentence_01 = 0
+    sentence_02 = 0
+    sentence_03 = 0
+    sentence_n1 = 0
+    sentence_n2 = 0
+    sentence_n3 = 0
+
+    if sentence_beginnings is not None:
+        if len(sentence_beginnings) > 0:
+            sentence_01 = sentence_beginnings[0] / len_file
+        if len(sentence_beginnings) > 1:
+            sentence_02 = sentence_beginnings[1] / len_file
+        if len(sentence_beginnings) > 2:
+            sentence_03 = sentence_beginnings[2] / len_file
+
+            sentence_n3 = sentence_beginnings[-3] / len_file
+            sentence_n2 = sentence_beginnings[-2] / len_file
+            sentence_n1 = sentence_beginnings[-1] / len_file
+        
+
+    for j, k in labels_to_map.items():
+        row = {"file_length" : int(len_file),
+               "len_splits" : len_splits,
+               "num_chars" : chars,
+               "len_first_sent" : len_first_sent,
+               "len_last_sent" : len_last_sent,
+               "sent_01" : sentence_01,
+               "sent_02" : sentence_02,
+               "sent_03" : sentence_03,
+               "sent_n1" : sentence_n1,
+               "sent_n2" : sentence_n2,
+               "sent_n3" : sentence_n3
+               }
+        row.update( {"id" : i,
+                     PREDICTOR_DISCOURSE : k})
+        ret.append(row.copy())
+    
+df_ss = pd.DataFrame(ret)
+
+df_ss.head()
+
+
+
+#Predict Here
+
+cols_to_keep = ["file_length", PREDICTOR_DISCOURSE,
+                "len_splits", "num_chars", "len_first_sent", "len_last_sent",
+               "sent_01", "sent_02", "sent_03", "sent_n1", "sent_n2", "sent_n3"]
+    
+preds = reg.predict( df_ss[ cols_to_keep] )
+
+preds = pd.DataFrame(preds, columns = ["start_location_percent", "end_location_percent"])
+final_merged = pd.concat( [df_ss, preds], axis = 1)
+
+
+#Predictions are here
+
+final_merged.head(2)
+
+
+#Translating Outputs to Token locations
+
+final_merged["start_token"] = final_merged["start_location_percent"] * final_merged["file_length"] / 100
+final_merged["end_token"] = final_merged["end_location_percent"] * final_merged["file_length"] / 100
+final_merged["start_token"] = final_merged["start_token"].round()
+final_merged["end_token"] = final_merged["end_token"].round()
+final_merged["start_token"] = final_merged["start_token"].astype(int)
+final_merged["end_token"] = final_merged["end_token"].astype(int)
+final_merged.head(2)
+
+
+
+#Frequency Finder
+
+train_freq = train[["id", PREDICTOR_DISCOURSE]].pivot_table(index = ["id"], columns = [PREDICTOR_DISCOURSE], aggfunc = len)
+train_freq = train_freq.fillna(0)
+frequencies = {i:0 for i in labels_to_map.keys()}
+final_merged["prob"] = 0.0
+for i in frequencies.keys():
+    frequencies[i] = len(train_freq[train_freq[i] != 0]) / (train["id"].nunique())
+    final_merged.loc[ final_merged[PREDICTOR_DISCOURSE] == labels_to_map[i], "prob"] = np.random.choice( [1, 0], p = [ frequencies[i], 1 - frequencies[i] ]  ,
+                                                                                                    size = len(final_merged.loc[ final_merged[PREDICTOR_DISCOURSE] == labels_to_map[i], "prob"]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
