@@ -13,3 +13,4 @@ automl.fit(X, y)
 df["predictions"] = automl.predict(X)
 print("Predictions")
 print(df[["MEDV", "predictions"]].head())
+
