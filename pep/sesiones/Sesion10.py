@@ -139,6 +139,7 @@ model2 = ols('cnt ~ temp_celsius + windspeed_kh', data=wbr).fit()
 print(model2.summary2())
 
 
+
 ###MODELO DE REGRESIÓN MÚLTIPLE 2--> AJUSTAR UN MODELO TENIENDO EN CUENTA TEMPERATURA, VIENTO Y HUMEDAD###
 
 model3 = ols('cnt ~ temp_celsius + windspeed_kh + hum', data=wbr).fit()

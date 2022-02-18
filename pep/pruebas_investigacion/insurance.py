@@ -112,6 +112,3 @@ sns.countplot(df['region'])
 #Tabla de contingencia
 plt.figure(figsize=(10, 6))
 sns.heatmap(df.corr().T, annot=True)
-
-
-
